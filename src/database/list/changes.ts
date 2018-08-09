@@ -1,26 +1,23 @@
 import { fromRef } from '../observable/fromRef';
-import { Observable } from 'rxjs/Observable';
+import { Observable, of, merge } from 'rxjs';
+
 import { DatabaseQuery, ChildEvent, AngularFireAction, SnapshotAction } from '../interfaces';
 import { isNil } from '../utils';
 
-import 'rxjs/add/operator/scan';
-import 'rxjs/add/observable/merge';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/distinctUntilChanged';
+import { switchMap, distinctUntilChanged, scan } from 'rxjs/operators';
 
-export function listChanges<T>(ref: DatabaseQuery, events: ChildEvent[]): Observable<SnapshotAction[]> {
-  return fromRef(ref, 'value', 'once').switchMap(snapshotAction => {
-    const childEvent$ = [Observable.of(snapshotAction)];
-    events.forEach(event => childEvent$.push(fromRef(ref, event)));
-    return Observable.merge(...childEvent$).scan(buildView, [])
-  })
-  .distinctUntilChanged();
+export function listChanges<T=any>(ref: DatabaseQuery, events: ChildEvent[]): Observable<SnapshotAction<T>[]> {
+  return fromRef(ref, 'value', 'once').pipe(
+    switchMap(snapshotAction => {
+      const childEvent$ = [of(snapshotAction)];
+      events.forEach(event => childEvent$.push(fromRef(ref, event)));
+      return merge(...childEvent$).pipe(scan(buildView, []))
+    }),
+    distinctUntilChanged()
+  );
 }
 
-function positionFor(changes: SnapshotAction[], key) {
+function positionFor<T>(changes: SnapshotAction<T>[], key) {
   const len = changes.length;
   for(let i=0; i<len; i++) {
     if(changes[i].payload.key === key) {
@@ -30,7 +27,7 @@ function positionFor(changes: SnapshotAction[], key) {
   return -1;
 }
 
-function positionAfter(changes: SnapshotAction[], prevKey?: string) {
+function positionAfter<T>(changes: SnapshotAction<T>[], prevKey?: string) {
   if(isNil(prevKey)) { 
     return 0; 
   } else {

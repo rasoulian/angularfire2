@@ -17,7 +17,7 @@ If you've followed the earlier step "Installation and Setup"  your `/src/app/app
 ```ts
 import { Component } from '@angular/core';
 import { AngularFireDatabase } from 'angularfire2/database';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -49,7 +49,7 @@ Then in your template, you can use the `async` pipe to unwrap the binding.
 ```ts
 import { Component } from '@angular/core';
 import { AngularFireDatabase } from 'angularfire2/database';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -58,7 +58,7 @@ import { Observable } from 'rxjs/Observable';
   `,
 })
 export class AppComponent {
-  item: FirebaseObjectObservable<any>;
+  item: Observable<any>;
   constructor(db: AngularFireDatabase) {
     this.item = db.object('item').valueChanges();
   }
@@ -125,6 +125,7 @@ itemRef.remove();
 ```ts
 import { Component } from '@angular/core';
 import { AngularFireDatabase, AngularFireObject } from 'angularfire2/database';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -140,7 +141,7 @@ import { AngularFireDatabase, AngularFireObject } from 'angularfire2/database';
 })
 export class AppComponent {
   itemRef: AngularFireObject<any>;
-  item: FirebaseObjectObservable<any>;
+  item: Observable<any>;
   constructor(db: AngularFireDatabase) {
     this.itemRef = db.object('item');
     this.item = this.itemRef.valueChanges();
@@ -158,7 +159,7 @@ export class AppComponent {
 ```
 
 ## Retrieving the snapshot
-AngularFire `valueChanges()` unwraps the Firebase DataSnapshot by default, but you can get the data as the original snapshot by using the `snapshotChanges()` option instead.
+AngularFire `valueChanges()` unwraps the Firebase DataSnapshot by default, but you can get the data as the original snapshot by using the `snapshotChanges()` option.
 
 ```ts
 this.itemRef = db.object('item');

@@ -1,9 +1,9 @@
-import * as firebase from 'firebase/app';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
+import { DatabaseReference } from '../interfaces';
+import { FirebaseApp, AngularFireModule } from 'angularfire2';
 import { AngularFireDatabase, AngularFireDatabaseModule, auditTrail, ChildEvent } from 'angularfire2/database';
 import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from '../test-config';
-import 'rxjs/add/operator/skip';
+import { skip } from 'rxjs/operators';
 
 // generate random string to test fidelity of naming
 const rando = () => (Math.random() + 1).toString(36).substring(7);
@@ -12,7 +12,7 @@ const FIREBASE_APP_NAME = rando();
 describe('auditTrail', () => {
   let app: FirebaseApp;
   let db: AngularFireDatabase;
-  let createRef: (path: string) => firebase.database.Reference;
+  let createRef: (path: string) => DatabaseReference;
   let batch = {};
   const items = [{ name: 'zero' }, { name: 'one' }, { name: 'two' }].map((item, i) => ( { key: i.toString(), ...item } ));
   Object.keys(items).forEach(function (key, i) {
@@ -41,14 +41,14 @@ describe('auditTrail', () => {
     app.delete().then(done, done.fail);
   });
 
-  function prepareAuditTrail(opts: { events?: ChildEvent[], skip: number } = { skip: 0 }) {
-    const { events, skip } = opts;
+  function prepareAuditTrail(opts: { events?: ChildEvent[], skipnumber: number } = { skipnumber: 0 }) {
+    const { events, skipnumber } = opts;
     const aref = createRef(rando());
     aref.set(batch);
     const changes = auditTrail(aref, events);
     return {
-      changes: changes.skip(skip),
-      ref: aref 
+      changes: changes.pipe(skip(skipnumber)),
+      ref: aref
     };
   }
 

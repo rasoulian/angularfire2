@@ -1,31 +1,25 @@
-import * as firebase from 'firebase/app';
-import { Observable } from 'rxjs/Observable';
-import { Subscriber } from 'rxjs/Subscriber';
-import { Subscription } from 'rxjs/Subscription';
-import { observeOn } from 'rxjs/operator/observeOn';
-import { ZoneScheduler } from 'angularfire2';
-import { Action, Reference } from '../interfaces';
-
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/share';
+import { Observable, Subscriber } from 'rxjs';
+import { DocumentReference, Query, Action, Reference, DocumentSnapshot, QuerySnapshot } from '../interfaces';
+import { map, share } from 'rxjs/operators';
 
 function _fromRef<T, R>(ref: Reference<T>): Observable<R> {
-  const ref$ = new Observable(subscriber => {
+  return new Observable(subscriber => {
     const unsubscribe = ref.onSnapshot(subscriber);
     return { unsubscribe };
   });
-  return observeOn.call(ref$, new ZoneScheduler(Zone.current));
 }
 
-export function fromRef<R>(ref: firebase.firestore.DocumentReference | firebase.firestore.Query) {
-  return _fromRef<typeof ref, R>(ref).share();
+export function fromRef<R>(ref: DocumentReference | Query) {
+  return _fromRef<typeof ref, R>(ref).pipe(share());
 }
 
-export function fromDocRef(ref: firebase.firestore.DocumentReference): Observable<Action<firebase.firestore.DocumentSnapshot>>{
-  return fromRef<firebase.firestore.DocumentSnapshot>(ref)
-    .map(payload => ({ payload, type: 'value' }));
+export function fromDocRef<T>(ref: DocumentReference): Observable<Action<DocumentSnapshot<T>>>{
+  return fromRef<DocumentSnapshot<T>>(ref)
+    .pipe(
+      map(payload => ({ payload, type: 'value' }))
+    );
 }
 
-export function fromCollectionRef(ref: firebase.firestore.Query): Observable<Action<firebase.firestore.QuerySnapshot>> {
-  return fromRef<firebase.firestore.QuerySnapshot>(ref).map(payload => ({ payload, type: 'query' }))
+export function fromCollectionRef<T>(ref: Query): Observable<Action<QuerySnapshot<T>>> {
+  return fromRef<QuerySnapshot<T>>(ref).pipe(map(payload => ({ payload, type: 'query' })));
 }

@@ -1,15 +1,12 @@
-import * as firebase from 'firebase/app';
-import { ZoneScheduler } from 'angularfire2';
+import { NgZone } from '@angular/core';
+import { FirebaseZoneScheduler } from 'angularfire2';
 import * as utils from './utils';
-import 'firebase/database';
 import { AFUnwrappedDataSnapshot } from './interfaces';
 import { FirebaseListObservable } from './firebase_list_observable';
-import { Observer } from 'rxjs/Observer';
-import { observeOn } from 'rxjs/operator/observeOn';
+import { Observer } from 'rxjs';
+import { observeOn, switchMap, map } from 'rxjs/operators';
 import { observeQuery } from './query_observable';
-import { Query, FirebaseListFactoryOpts, DatabaseReference, DatabaseQuery, DatabaseSnapshot } from './interfaces';
-import { switchMap } from 'rxjs/operator/switchMap';
-import { map } from 'rxjs/operator/map';
+import { Reference, Query, FirebaseListFactoryOpts, DatabaseReference, DatabaseQuery, DatabaseSnapshot } from './interfaces';
 
 export function FirebaseListFactory (
   ref: DatabaseReference,
@@ -92,7 +89,7 @@ export function FirebaseListFactory (
       }
 
       return queried;
-    }), (queryRef: firebase.database.Reference, ix: number) => {
+    }), (queryRef: Reference, ix: number) => {
       return firebaseListObservable(queryRef, { preserveSnapshot });
     })
     .subscribe(subscriber);
@@ -108,7 +105,7 @@ export function FirebaseListFactory (
  * asynchonous. It creates a initial array from a promise of ref.once('value'), and then starts
  * listening to child events. When the initial array is loaded, the observable starts emitting values.
  */
-function firebaseListObservable(ref: firebase.database.Reference | DatabaseQuery, {preserveSnapshot}: FirebaseListFactoryOpts = {}): FirebaseListObservable<any> {
+function firebaseListObservable(ref: Reference | DatabaseQuery, {preserveSnapshot}: FirebaseListFactoryOpts = {}): FirebaseListObservable<any> {
 
   const toValue = preserveSnapshot ? (snapshot => snapshot) : utils.unwrapMapFn;
   const toKey = preserveSnapshot ? (value => value.key) : (value => value.$key);
@@ -130,7 +127,7 @@ function firebaseListObservable(ref: firebase.database.Reference | DatabaseQuery
         snap.forEach((child: any) => {
           lastLoadedKey = child.key;
         });
-        if (array.find((child: any) => toKey(child) === lastLoadedKey)) {
+        if ((<any>array).find((child: any) => toKey(child) === lastLoadedKey)) {
           hasLoaded = true;
           obs.next(array);
         }
@@ -180,14 +177,15 @@ function firebaseListObservable(ref: firebase.database.Reference | DatabaseQuery
       // The Firebase SDK requires the reference, event name, and callback to
       // properly unsubscribe, otherwise it can affect other subscriptions.
       handles.forEach(item => {
-        ref.off(item.event, item.handle);
+        ref.off(item.event as any, item.handle);
       });
     };
 
   });
 
   // TODO: should be in the subscription zone instead
-  return observeOn.call(listObs, new ZoneScheduler(Zone.current));
+  return observeOn.call(listObs, new FirebaseZoneScheduler(new NgZone({}), {}));
+
 }
 
 export function onChildAdded(arr:any[], child:any, toKey:(element:any)=>string, prevKey:string): any[] {

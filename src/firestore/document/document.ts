@@ -1,17 +1,12 @@
-import * as firebase from 'firebase/app';
-import 'firebase/firestore';
-import { Observable } from 'rxjs/Observable';
-import { Subscriber } from 'rxjs/Subscriber';
-import { QueryFn, AssociatedReference, Action } from '../interfaces';
+import { Observable, Subscriber } from 'rxjs';
+import { DocumentReference, SetOptions, DocumentData, QueryFn, AssociatedReference, Action, DocumentSnapshot } from '../interfaces';
 import { fromDocRef } from '../observable/fromRef';
-import 'rxjs/add/operator/map';
+import { map } from 'rxjs/operators';
 
 import { Injectable } from '@angular/core';
-import { FirebaseApp } from 'angularfire2';
 
-import { associateQuery } from '../firestore';
+import { AngularFirestore, associateQuery } from '../firestore';
 import { AngularFirestoreCollection } from '../collection/collection';
-
 
 /**
  * AngularFirestoreDocument service
@@ -26,7 +21,7 @@ import { AngularFirestoreCollection } from '../collection/collection';
  *
  * Example:
  *
- * const fakeStock = new AngularFirestoreDocument<Stock>(firebase.firestore.doc('stocks/FAKE'));
+ * const fakeStock = new AngularFirestoreDocument<Stock>(doc('stocks/FAKE'));
  * await fakeStock.set({ name: 'FAKE', price: 0.01 });
  * fakeStock.valueChanges().map(snap => {
  *   if(snap.exists) return snap.data();
@@ -35,21 +30,21 @@ import { AngularFirestoreCollection } from '../collection/collection';
  * // OR! Transform using Observable.from() and the data is unwrapped for you
  * Observable.from(fakeStock).subscribe(value => console.log(value));
  */
-export class AngularFirestoreDocument<T> {
+export class AngularFirestoreDocument<T=DocumentData> {
 
   /**
    * The contstuctor takes in a DocumentReference to provide wrapper methods
    * for data operations, data streaming, and Symbol.observable.
    * @param ref
    */
-  constructor(public ref: firebase.firestore.DocumentReference) { }
+  constructor(public ref: DocumentReference, private afs: AngularFirestore) { }
 
   /**
    * Create or overwrite a single document.
    * @param data
    * @param options
    */
-  set(data: T, options?: firebase.firestore.SetOptions): Promise<void> {
+  set(data: T, options?: SetOptions): Promise<void> {
     return this.ref.set(data, options);
   }
 
@@ -74,25 +69,29 @@ export class AngularFirestoreDocument<T> {
    * @param path
    * @param queryFn
    */
-  collection<T>(path: string, queryFn?: QueryFn): AngularFirestoreCollection<T> {
+  collection<R=DocumentData>(path: string, queryFn?: QueryFn): AngularFirestoreCollection<R> {
     const collectionRef = this.ref.collection(path);
     const { ref, query } = associateQuery(collectionRef, queryFn);
-    return new AngularFirestoreCollection<T>(ref, query);
+    return new AngularFirestoreCollection<R>(ref, query, this.afs);
   }
 
   /**
    * Listen to snapshot updates from the document.
    */
-  snapshotChanges(): Observable<Action<firebase.firestore.DocumentSnapshot>> {
-    return fromDocRef(this.ref);
+  snapshotChanges(): Observable<Action<DocumentSnapshot<T>>> {
+    const fromDocRef$ = fromDocRef<T>(this.ref);
+    const scheduledFromDocRef$ = this.afs.scheduler.runOutsideAngular(fromDocRef$);
+    return this.afs.scheduler.keepUnstableUntilFirst(scheduledFromDocRef$);
   }
 
   /**
    * Listen to unwrapped snapshot updates from the document.
    */
-  valueChanges(): Observable<T> {
-    return this.snapshotChanges().map(action => {
-      return (action.payload.exists ? action.payload.data() : null) as T;
-    });
+  valueChanges(): Observable<T|undefined> {
+    return this.snapshotChanges().pipe(
+      map(action => {
+        return action.payload.data();
+      })
+    );
   }
 }

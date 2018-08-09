@@ -1,19 +1,19 @@
-import * as firebase from 'firebase/app';
 import { Subscription } from 'rxjs';
 import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
 import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseObjectObservable, FirebaseObjectFactory } from 'angularfire2/database-deprecated';
 import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from './test-config';
+import { Reference } from './interfaces'
 
 describe('FirebaseObjectFactory', () => {
   let i = 0;
-  let ref: firebase.database.Reference;
+  let ref: Reference;
   let observable: FirebaseObjectObservable<any>;
   let subscription: Subscription;
   let nextSpy: jasmine.Spy;
-  let app: firebase.app.App;
+  let app: FirebaseApp;
   let db: AngularFireDatabase;
-  
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [

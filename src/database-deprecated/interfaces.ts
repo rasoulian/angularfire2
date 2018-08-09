@@ -1,5 +1,9 @@
-import * as firebase from 'firebase/app';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { database } from 'firebase';
+
+export type Reference = database.Reference;
+export type DataSnapshot = database.DataSnapshot;
+export type ThenableReference = database.ThenableReference;
 
 export interface FirebaseOperationCases {
   stringCase: () => Promise<void>;
@@ -81,8 +85,8 @@ export enum QueryOptions {
 
 export type Primitive = number | string | boolean;
 
-export type DatabaseSnapshot = firebase.database.DataSnapshot;
-export type DatabaseReference = firebase.database.Reference;
-export type DatabaseQuery = firebase.database.Query;
+export type DatabaseSnapshot = DataSnapshot;
+export type DatabaseReference = Reference;
+export type DatabaseQuery = database.Query;
 export type QueryReference = DatabaseReference | DatabaseQuery;
 export type PathReference = QueryReference | string;

@@ -1,10 +1,9 @@
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { fromRef } from '../observable/fromRef';
-import { DatabaseQuery, AngularFireAction, SnapshotAction } from '../interfaces';
-import { database } from 'firebase/app';
+import { DatabaseQuery, DatabaseSnapshot, AngularFireAction, SnapshotAction } from '../interfaces';
 
-export function createObjectSnapshotChanges(query: DatabaseQuery) {
-  return function snapshotChanges(): Observable<SnapshotAction> {
+export function createObjectSnapshotChanges<T>(query: DatabaseQuery) {
+  return function snapshotChanges(): Observable<SnapshotAction<T>> {
     return fromRef(query, 'value');
   }
 }

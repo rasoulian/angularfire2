@@ -1,24 +1,24 @@
-import * as firebase from 'firebase/app';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { database } from 'firebase';
 
-export type FirebaseOperation = string | firebase.database.Reference | firebase.database.DataSnapshot;
+export type FirebaseOperation = string | database.Reference | database.DataSnapshot;
 
 export interface AngularFireList<T> {
   query: DatabaseQuery;
   valueChanges(events?: ChildEvent[]): Observable<T[]>;
-  snapshotChanges(events?: ChildEvent[]): Observable<SnapshotAction[]>;
-  stateChanges(events?: ChildEvent[]): Observable<SnapshotAction>;
-  auditTrail(events?: ChildEvent[]): Observable<SnapshotAction[]>;
+  snapshotChanges(events?: ChildEvent[]): Observable<SnapshotAction<T>[]>;
+  stateChanges(events?: ChildEvent[]): Observable<SnapshotAction<T>>;
+  auditTrail(events?: ChildEvent[]): Observable<SnapshotAction<T>[]>;
   update(item: FirebaseOperation, data: T): Promise<void>;
   set(item: FirebaseOperation, data: T): Promise<void>;
-  push(data: T): firebase.database.ThenableReference;
+  push(data: T): database.ThenableReference;
   remove(item?: FirebaseOperation): Promise<void>;
 }
 
 export interface AngularFireObject<T> {
   query: DatabaseQuery;
   valueChanges(): Observable<T | null>;
-  snapshotChanges(): Observable<SnapshotAction>;
+  snapshotChanges(): Observable<SnapshotAction<T>>;
   update(data: Partial<T>): Promise<void>;
   set(data: T): Promise<void>;
   remove(): Promise<void>;
@@ -45,12 +45,26 @@ export interface AngularFireAction<T> extends Action<T> {
   key: string | null;
 }
 
-export type SnapshotAction = AngularFireAction<DatabaseSnapshot>;
+export type SnapshotAction<T> = AngularFireAction<DatabaseSnapshot<T>>;
 
 export type Primitive = number | string | boolean;
 
-export type DatabaseSnapshot = firebase.database.DataSnapshot;
-export type DatabaseReference = firebase.database.Reference;
-export type DatabaseQuery = firebase.database.Query;
+export interface DatabaseSnapshotExists<T> extends database.DataSnapshot {
+  exists(): true;
+  val(): T;
+  forEach(action: (a: DatabaseSnapshot<T>) => boolean): boolean;
+}
+
+export interface DatabaseSnapshotDoesNotExist<T> extends database.DataSnapshot {
+  exists(): false;
+  val(): null;
+  forEach(action: (a: DatabaseSnapshot<T>) => boolean): boolean;
+}
+
+export type DatabaseSnapshot<T> = DatabaseSnapshotExists<T> | DatabaseSnapshotDoesNotExist<T>;
+
+export type DatabaseReference = database.Reference;
+export type DatabaseQuery = database.Query;
+export type DataSnapshot = database.DataSnapshot;
 export type QueryReference = DatabaseReference | DatabaseQuery;
 export type PathReference = QueryReference | string;

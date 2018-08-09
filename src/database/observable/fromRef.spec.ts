@@ -1,8 +1,9 @@
-import * as firebase from 'firebase/app';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
+import { DatabaseReference } from '../interfaces';
+import { FirebaseApp, AngularFireModule } from 'angularfire2';
 import { AngularFireDatabase, AngularFireDatabaseModule, fromRef } from 'angularfire2/database';
 import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from '../test-config';
+import { take } from 'rxjs/operators';
 
 // generate random string to test fidelity of naming
 const rando = () => (Math.random() + 1).toString(36).substring(7);
@@ -10,7 +11,7 @@ const FIREBASE_APP_NAME = rando();
 
 describe('fromRef', () => {
   let app: FirebaseApp;
-  let ref: (path: string) => firebase.database.Reference;
+  let ref: (path: string) => DatabaseReference;
   let batch = {};
   const items = [{ name: 'one' }, { name: 'two' }, { name: 'three' }].map(item => ( { key: rando(), ...item } ));
   Object.keys(items).forEach(function (key) {
@@ -57,7 +58,7 @@ describe('fromRef', () => {
     const itemRef = ref(rando());
     itemRef.set({});
     const obs = fromRef(itemRef, 'value');
-    const sub = obs.take(1).subscribe(change => {
+    const sub = obs.pipe(take(1)).subscribe(change => {
       expect(change.payload.exists()).toEqual(false);
       expect(change.payload.val()).toEqual(null);
     }).add(done);
@@ -122,7 +123,7 @@ describe('fromRef', () => {
       });
       itemRef.child(key).update({ name });
     });
-    
+
     it('should stream back a child_removed event', async (done: any) => {
       const itemRef = ref(rando());
       itemRef.set(batch);
@@ -139,7 +140,7 @@ describe('fromRef', () => {
       });
       itemRef.child(key).remove();
     });
-    
+
     it('should stream back a child_moved event', async (done: any) => {
       const itemRef = ref(rando());
       itemRef.set(batch);
@@ -155,7 +156,7 @@ describe('fromRef', () => {
         done();
       });
       itemRef.child(key).setPriority(-100, () => {});
-    });    
+    });
 
     it('should stream back a value event', (done: any) => {
       const itemRef = ref(rando());
@@ -169,7 +170,7 @@ describe('fromRef', () => {
         sub.unsubscribe();
         expect(sub.closed).toEqual(true);
       });
-    });  
+    });
 
     it('should stream back query results', (done: any) => {
       const itemRef = ref(rando());
@@ -183,7 +184,7 @@ describe('fromRef', () => {
         done();
       });
     });
-    
+
   });
 
 });
